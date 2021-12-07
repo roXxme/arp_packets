@@ -1,0 +1,25 @@
+import pyshark  # importing pyshark module
+from collections import Counter
+
+# creating a live capture
+capture = pyshark.LiveCapture(interface='wlo2', bpf_filter='arp')
+# sniffing the captured packets
+capture.sniff(timeout=5)
+# declaring an empty set
+keys = {}
+# creating a tuple of broadcast mac or 00:00.00...
+e_mac = '00:00:00:00:00:00'
+already_seen = []
+count = Counter()
+# running for loop for extracting mac and ip from captured packets
+for packet in capture:
+    keys['ip'] = packet.arp.dst_proto_ipv4
+    keys['mac'] = packet.arp.dst_hw_mac
+    seen = keys['mac'], keys['ip']
+    count.update([(keys['mac'], keys['ip'])])
+
+    # comparing mac to filter 00:00... or broadcasted mac
+    if keys['mac'] not in e_mac:
+       if seen not in already_seen:
+           already_seen.append(seen)
+        print(packet.sniff_time, count[(keys['mac'], keys['ip'])], keys['mac'], keys['ip'])
